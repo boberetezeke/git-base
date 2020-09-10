@@ -8,7 +8,7 @@ class Widget
   end
 end
 
-describe GitBase do
+describe GitBase::Database do
   GIT_ROOT = "git_root"
   GIT_BIN_DIR = "bin"
 
@@ -24,7 +24,7 @@ describe GitBase do
   end
 
   it "writes to git" do
-    git = GitBase.new(GIT_ROOT, GIT_BIN_DIR)
+    git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
 
     attributes = {color: "red", size: 1}
     git.update(git.object_id(Widget, "widget", "abcd"), attributes)
@@ -33,7 +33,7 @@ describe GitBase do
   end
 
   it "returns history objects after two writes" do
-    git = GitBase.new(GIT_ROOT, GIT_BIN_DIR)
+    git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
     git_oid = git.object_id(Widget, "widget", "abcd")
 
     attributes = {color: "red", size: 1}
@@ -52,7 +52,7 @@ describe GitBase do
   end
 
   it "returns a particular version of an object" do
-    git = GitBase.new(GIT_ROOT, GIT_BIN_DIR)
+    git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
     git_oid = git.object_id(Widget, "widget", "abcd")
 
     attributes = {color: "red", size: 1}
