@@ -13,6 +13,12 @@ module GitBase
       ObjectId.new(*args)
     end
 
+    #
+    # return the history of a given object
+    #
+    # @param object_id [ObjectId] - the object id of the object
+    # @return [History] - history object
+    #
     def history(object_id)
       json = nil
 
@@ -25,6 +31,12 @@ module GitBase
       History.new(self, file_entry, json)
     end
 
+    #
+    # Given a history entry, return the object as was at that time
+    #
+    # @param history_entry [HistoryEntry] - a history entry object
+    # @return [Object] - The object
+    #
     def version_at(history_entry)
       attributes = nil
       Dir.chdir(db_path) do
@@ -33,6 +45,12 @@ module GitBase
       history_entry.file_entry.as_object(attributes)
     end
 
+    #
+    # commit a change for an object to git
+    #
+    # @param object_id [ObjectId] - the id for the object
+    # @param object_attributes [Hash] - a hash of attributes for the object
+    #
     def update(object_id, object_attributes)
       fe = FileEntry.new(object_id)
       unless File.exist?(db_path)
@@ -74,6 +92,10 @@ module GitBase
       end
     end
 
+    #
+    # return a change based on the current and new states??
+    #
+    # @param
     def difference(current_state, new_state)
       diff = ChangesSummary.new
       new_state.each do |k,v|
