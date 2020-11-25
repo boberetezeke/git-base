@@ -1,10 +1,18 @@
 module GitBase
   class HistoryEntry
-    attr_reader :sha, :author, :message, :file_entry, :time, :changes_summary
+    # Git SHA for the commit containing this entry
+    attr_reader :sha
+    # The email address of the author as a String
+    attr_reader :author
+    # The commit message
+    attr_reader :message
+    # Time - the time of the change
+    attr_reader :time
+    # [Symbol, Change] - the symbol for the field that changed and the change description object
+    attr_reader :changes_summary
 
-    def initialize(git_base, file_entry, json)
+    def initialize(git_base, json)
       @git_base = git_base
-      @file_entry = file_entry
       @sha = json[:commit]
       @author = json[:author]
       @message = json[:message]
