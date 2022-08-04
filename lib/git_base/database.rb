@@ -37,12 +37,34 @@ module GitBase
     end
 
     #
+    # merge branch into current branch
+    #
+    def merge(branch_name)
+      Command.new(db_path).merge(branch_name)
+    end
+
+    #
+    # fetch updates from remote
+    #
+    def fetch(remote_name)
+      Command.new(db_path).fetch(remote_name)
+    end
+
+    def pull(remote_name, branch_name)
+      Command.new(db_path).pull(remote_name, branch_name)
+    end
+
+    def push(remote_name, branch_name)
+      Command.new(db_path).push(remote_name, branch_name)
+    end
+
+    #
     # switch to a branch
     #
     # @param branch_name [String] - the name of the branch to switch to
     #
-    def switch_to_branch(branch_name)
-      Command.new(db_path).checkout(branch_name)
+    def switch_to_branch(branch_name, create: false)
+      Command.new(db_path).checkout(branch_name, create: create)
     end
 
     #
@@ -150,14 +172,22 @@ module GitBase
 
     private
 
+    GIT_BARE_CONTENTS = ["branches", "config", "description", "head", "hooks", "info", "objects", "refs"]
     #
     # initialize the database directory
     #
     # @param initialize_if_doesnt_exist [Boolean] - true if initialize if it doesn't exist
     #
     def initialize_git_directory(initialize_if_doesnt_exist)
-      Dir.mkdir(@base_directory) unless File.exist?(@base_directory)
+      unless File.exist?(@base_directory)
+        return unless initialize_if_doesnt_exist
+        Dir.mkdir(@base_directory)
+      end
+
       if FileTest.directory?(@base_directory)
+        base_directory_contents = Dir["#{@base_directory}/*"].map{|fn| File.basename(fn).downcase}.sort
+        return if base_directory_contents == GIT_BARE_CONTENTS
+
         git_directory = File.join(@base_directory, ".git")
         if File.exist?(git_directory)
           unless FileTest.directory?(git_directory)
