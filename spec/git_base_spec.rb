@@ -36,6 +36,18 @@ describe GitBase::Database do
     expect(YAML.load(File.read("#{GIT_ROOT}/widget/abcd.yml"))).to eq(attributes)
   end
 
+  it "removes an object" do
+    git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
+
+    attributes = {color: "red", size: 1}
+    git.update(git.object_guid(Widget, "widget", "abcd"), attributes)
+    expect(File.exist?("#{GIT_ROOT}/widget/abcd.yml")).to be_truthy
+
+    git.delete(git.object_guid(Widget, "widget", "abcd"))
+
+    expect(File.exist?("#{GIT_ROOT}/widget/abcd.yml")).to be_falsy
+  end
+
   it "returns history of changes with multiple objects" do
     git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
     git_oid_1 = git.object_guid(Widget, "widget", "1")

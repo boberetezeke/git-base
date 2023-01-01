@@ -112,6 +112,20 @@ module GitBase
       File.exist?(File.join(db_path, ".git"))
     end
 
+    def delete(object_guid)
+      fe = file_entry_for_object_guid(object_guid)
+
+      filename = fe.full_filename(db_path)
+      unless File.exist?(filename)
+        raise "Unable to remove non-existent entry: #{filename}"
+      end
+
+      current_state = YAML.load(File.read(filename))
+      write_commit_entry(object_guid, filename, current_state, {}) do
+        Command.new(db_path).rm(fe.relative_filename)
+      end
+    end
+
     #
     # commit a change for an object to git
     #
@@ -119,6 +133,34 @@ module GitBase
     # @param object_attributes [Hash] - a hash of attributes for the object
     #
     def update(object_guid, object_attributes)
+      fe = file_entry_for_object_guid(object_guid)
+
+      filename = fe.full_filename(db_path)
+      if File.exist?(filename)
+        current_state = YAML.load(File.read(filename))
+      else
+        current_state = {}
+      end
+      write_commit_entry(object_guid, filename, current_state, object_attributes) do
+        Command.new(db_path).add(fe.relative_filename)
+      end
+    end
+
+    def write_commit_entry(object_guid, filename, current_state, new_state)
+      diff = difference(object_guid, current_state, new_state)
+      File.open(filename, "w") {|f| f.write new_state.to_yaml } unless new_state == {}
+      commit_message_file = Tempfile.new("commit-message")
+      begin
+        commit_message_file.write diff.to_yaml
+        commit_message_file.close
+        yield
+        Command.new(db_path).commit(commit_message_file.path)
+      ensure
+        commit_message_file.unlink
+      end
+    end
+
+    def file_entry_for_object_guid(object_guid)
       fe = FileEntry.new(object_guid)
       unless File.exist?(db_path)
         Dir.mkdir(db_path)
@@ -126,33 +168,16 @@ module GitBase
       end
 
       unless File.directory?(db_path)
-        puts "Warning: Unable to save file because file #{db_path} is not a directory as db path"
-        return
+        raise "Unable to save file because file #{db_path} is not a directory as db path"
       end
 
       Dir.mkdir(fe.path_for_class(db_path)) unless File.exist?(fe.path_for_class(db_path))
 
-      if File.directory?(fe.path_for_class(db_path))
-        filename = fe.full_filename(db_path)
-        if File.exist?(filename)
-          current_state = YAML.load(File.read(filename))
-        else
-          current_state = {}
-        end
-        diff = difference(object_guid, current_state, object_attributes)
-        File.open(filename, "w") {|f| f.write object_attributes.to_yaml }
-        commit_message_file = Tempfile.new("commit-message")
-        begin
-          commit_message_file.write diff.to_yaml
-          commit_message_file.close
-          Command.new(db_path).add(fe.relative_filename)
-          Command.new(db_path).commit(commit_message_file.path)
-        ensure
-          commit_message_file.unlink
-        end
-      else
-        puts "Warning: Unable to save file because file #{fe.path_for_class(db_path)} is not a directory json file"
+      unless File.directory?(fe.path_for_class(db_path))
+        raise "Unable to save file because file #{fe.path_for_class(db_path)} is not a directory as object path"
       end
+
+      fe
     end
 
     #

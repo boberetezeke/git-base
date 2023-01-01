@@ -12,6 +12,10 @@ module GitBase
       run("add #{filename}")
     end
 
+    def rm(filename)
+      run("rm #{filename}")
+    end
+
     def commit(commit_message_file_path)
       run("commit --file #{commit_message_file_path}")
     end
