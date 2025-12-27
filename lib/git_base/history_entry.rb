@@ -17,7 +17,7 @@ module GitBase
       @author = json[:author]
       @message = json[:message]
       @time = json[:date]
-      @changes_summary = YAML::load(json[:changes_summary])
+      @changes_summary = YAML::unsafe_load(json[:changes_summary])
     end
 
     def retrieve
