@@ -49,40 +49,71 @@ describe GitBase::Database do
   end
 
   it "returns history of changes with multiple objects" do
+    sleep_time = 0.0
     git = GitBase::Database.new(GIT_ROOT, GIT_BIN_DIR)
     git_oid_1 = git.object_guid(Widget, "widget", "1")
     git_oid_2 = git.object_guid(Widget, "widget", "2")
 
     attributes = {color: "red", size: 1}
+    puts "Time.now.utc = #{Time.now.utc}"
+    git_4_change_time = Time.now.utc
+    sleep sleep_time
     git.update(git_oid_1, attributes)
+    sleep sleep_time
 
     attributes = {color: "orange", size: 3}
+    puts "Time.now.utc = #{Time.now.utc}"
+    git_3_change_time = Time.now.utc
+    sleep sleep_time
     git.update(git_oid_2, attributes)
+    sleep sleep_time
 
     attributes = {color: "blue", size: 2}
+    puts "Time.now.utc = #{Time.now.utc}"
+    git_2_change_time = Time.now.utc
+    sleep sleep_time
     git.update(git_oid_1, attributes)
+    sleep sleep_time
+
+    git_1_change_time = Time.now.utc
 
     history = git.history
 
     expect(history.entries.size).to eq(3)
 
-    expect(history.entries[0].class).to eq(GitBase::HistoryEntry)
+    entries_1, entries_2, entries_3 = history.entries
+
+    puts "git_1_change_time: #{git_1_change_time}"
+    puts "entries_3.time: #{entries_3.time}"
+    puts "git_2_change_time: #{git_2_change_time}"
+    puts "entries_2.time: #{entries_2.time}"
+    puts "git_3_change_time: #{git_3_change_time}"
+    puts "entries_1.time: #{entries_1.time}"
+    puts "git_4_change_time: #{git_4_change_time}"
+
+    expect(entries_1.class).to eq(GitBase::HistoryEntry)
     changes_summary_expected = GitBase::ChangesSummary.new(git_oid_1)
     changes_summary_expected.add(GitBase::Change.new(:color, "red", "blue"))
     changes_summary_expected.add(GitBase::Change.new(:size, 1, 2))
-    expect(history.entries[0].changes_summary).to eq(changes_summary_expected)
+    expect(entries_1.changes_summary).to eq(changes_summary_expected)
+    expect(git_1_change_time > entries_1.time).to be_truthy
+    expect(git_2_change_time < entries_1.time).to be_truthy
 
-    expect(history.entries[1].class).to eq(GitBase::HistoryEntry)
+    expect(entries_2.class).to eq(GitBase::HistoryEntry)
     changes_summary_expected = GitBase::ChangesSummary.new(git_oid_2)
     changes_summary_expected.add(GitBase::Change.new(:color, nil, "orange"))
     changes_summary_expected.add(GitBase::Change.new(:size, nil, 3))
-    expect(history.entries[1].changes_summary).to eq(changes_summary_expected)
+    expect(entries_2.changes_summary).to eq(changes_summary_expected)
+    expect(git_2_change_time > entries_2.time).to be_truthy
+    expect(git_3_change_time < entries_2.time).to be_truthy
 
-    expect(history.entries[2].class).to eq(GitBase::HistoryEntry)
+    expect(entries_3.class).to eq(GitBase::HistoryEntry)
     changes_summary_expected = GitBase::ChangesSummary.new(git_oid_1)
     changes_summary_expected.add(GitBase::Change.new(:color, nil, "red"))
     changes_summary_expected.add(GitBase::Change.new(:size, nil, 1))
-    expect(history.entries[2].changes_summary).to eq(changes_summary_expected)
+    expect(entries_3.changes_summary).to eq(changes_summary_expected)
+    expect(git_3_change_time > entries_3.time).to be_truthy
+    expect(git_4_change_time < entries_3.time).to be_truthy
   end
 
   it "returns history of changes with multiple objects since a tag was applied" do

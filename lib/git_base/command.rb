@@ -62,11 +62,11 @@ module GitBase
 
     def run(str, capture_output: false)
       command = "git #{str}"
-      puts "RUN: #{command}"
+      # puts "RUN: #{command}"
       Dir.chdir(@db_path) do
         if capture_output
           output = `#{command}`
-          puts "OUTPUT: #{output}"
+          # puts "OUTPUT: #{output}"
           return output
         else
           system("#{command} > /dev/null")

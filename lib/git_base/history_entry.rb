@@ -1,3 +1,5 @@
+require 'time'
+
 module GitBase
   class HistoryEntry
     # Git SHA for the commit containing this entry
@@ -16,7 +18,7 @@ module GitBase
       @sha = json[:commit]
       @author = json[:author]
       @message = json[:message]
-      @time = json[:date]
+      @time = Time.parse(json[:date]).utc
       @changes_summary = YAML::unsafe_load(json[:changes_summary])
     end
 

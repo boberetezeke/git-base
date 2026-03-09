@@ -97,7 +97,7 @@ module GitBase
     def version_at(history_entry)
       Dir.chdir(db_path) do
         file_entry =  FileEntry.new(history_entry.changes_summary.object_guid)
-        attributes = YAML.load(StringIO.new(`git show #{history_entry.sha}:#{file_entry.relative_filename}`))
+        attributes = YAML.unsafe_load(StringIO.new(`git show #{history_entry.sha}:#{file_entry.relative_filename}`))
 
         file_entry.as_object(attributes)
       end
@@ -112,6 +112,13 @@ module GitBase
       File.exist?(File.join(db_path, ".git"))
     end
 
+    def exists?(object_guid)
+      fe = file_entry_for_object_guid(object_guid)
+      filename = fe.full_filename(db_path)
+
+      File.exist?(filename)
+    end
+
     def delete(object_guid)
       fe = file_entry_for_object_guid(object_guid)
 
@@ -120,7 +127,7 @@ module GitBase
         raise "Unable to remove non-existent entry: #{filename}"
       end
 
-      current_state = YAML.load(File.read(filename))
+      current_state = YAML.unsafe_load(File.read(filename))
       write_commit_entry(object_guid, filename, current_state, {}) do
         Command.new(db_path).rm(fe.relative_filename)
       end
@@ -137,7 +144,7 @@ module GitBase
 
       filename = fe.full_filename(db_path)
       if File.exist?(filename)
-        current_state = YAML.load(File.read(filename))
+        current_state = YAML.unsafe_load(File.read(filename))
       else
         current_state = {}
       end
@@ -154,7 +161,9 @@ module GitBase
         commit_message_file.write diff.to_yaml
         commit_message_file.close
         yield
+        puts "Time before commit entry: #{Time.now}"
         Command.new(db_path).commit(commit_message_file.path)
+        puts "Time after commit entry: #{Time.now}"
       ensure
         commit_message_file.unlink
       end
