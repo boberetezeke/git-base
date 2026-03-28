@@ -7,6 +7,7 @@ module GitBase
     def initialize(base_directory, bin_directory, initialize_if_doesnt_exist: true)
       @base_directory = File.expand_path(base_directory)
       @bin_directory = File.expand_path(bin_directory)
+      @commit_cache = {}
 
       initialize_git_directory(initialize_if_doesnt_exist)
     end
@@ -148,15 +149,30 @@ module GitBase
       else
         current_state = {}
       end
-      write_commit_entry(object_guid, filename, current_state, object_attributes) do
+      write_cached_commit_entry(object_guid, filename, current_state, object_attributes) do
         Command.new(db_path).add(fe.relative_filename)
       end
     end
 
-    def write_commit_entry(object_guid, filename, current_state, new_state)
+    def write_cached_commit_entry(*args, &block)
+      now = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+      if @commit_cache_time == now
+        if !@commit_cache_commits.empty?
+          @commit_cache_commits.push(args)
+        end
+      else
+        @commit_cache_time = now
+        @commit_cache_commits = [args]
+      end
+
+      write_commit_entry(*args, diffs: diffs, &block)
+    end
+
+    def write_commit_entry(object_guid, filename, current_state, new_state, diffs: [])
       diff = difference(object_guid, current_state, new_state)
       File.open(filename, "w") {|f| f.write new_state.to_yaml } unless new_state == {}
       commit_message_file = Tempfile.new("commit-message")
+
       begin
         commit_message_file.write diff.to_yaml
         commit_message_file.close
